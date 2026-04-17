@@ -16,7 +16,7 @@ import {
   MdPersonAdd,
   MdViewList,
 } from "react-icons/md";
-import type { StageFilter, TrackerDisplayMode } from "../types";
+import type { StageFilter, TrackerDisplayMode } from "../tracker-types";
 
 interface WebsiteDetails {
   origin: string;

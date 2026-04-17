@@ -50,21 +50,23 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Protected routes
-  const protectedRoutes = ['/apps/application-tracker']
+  const protectedRoutes = ['/', '/admin', '/profile']
 
   // Auth routes (should redirect if already logged in)
   const authRoutes = ['/auth/login', '/auth/signup']
+  const publicRoutes = ['/auth/access-denied', '/privacy']
 
   // Check if route is protected
   const isProtectedRoute = protectedRoutes.some((route) =>
-    pathname.startsWith(route)
+    route === '/' ? pathname === route : pathname.startsWith(route)
   )
 
   // Check if route is auth route
   const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route))
+  const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route))
 
   // If accessing protected route without auth, redirect to login
-  if (isProtectedRoute && !user) {
+  if (isProtectedRoute && !isPublicRoute && !user) {
     const redirectUrl = new URL('/auth/login', request.url)
     redirectUrl.searchParams.set('redirect', pathname)
     return NextResponse.redirect(redirectUrl)

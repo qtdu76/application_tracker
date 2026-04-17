@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { FcGoogle } from "react-icons/fc";
+import { AuthShell } from "../_components/auth-shell";
 import { createClient } from "@/utils/supabase/client";
 
 export default function SignupPage() {
@@ -10,9 +11,33 @@ export default function SignupPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const router = useRouter();
+
+  const handleGoogleSignup = async () => {
+    setGoogleLoading(true);
+    setError(null);
+
+    try {
+      const supabase = createClient();
+      const callbackUrl = `${window.location.origin}/auth/callback?next=/`;
+      const { error: authError } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: callbackUrl,
+        },
+      });
+
+      if (authError) {
+        setError(authError.message);
+        setGoogleLoading(false);
+      }
+    } catch {
+      setError("Google signup could not be started.");
+      setGoogleLoading(false);
+    }
+  };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,20 +45,20 @@ export default function SignupPage() {
     setError(null);
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match");
+      setError("Passwords do not match.");
       setLoading(false);
       return;
     }
 
     if (password.length < 6) {
-      setError("Password must be at least 6 characters");
+      setError("Password must be at least 6 characters.");
       setLoading(false);
       return;
     }
 
     try {
       const supabase = createClient();
-      const { data, error: authError } = await supabase.auth.signUp({
+      const { error: authError } = await supabase.auth.signUp({
         email,
         password,
       });
@@ -44,57 +69,73 @@ export default function SignupPage() {
         return;
       }
 
-      if (data.user) {
-        setSuccess(true);
-        // Auto-login after signup
-        setTimeout(() => {
-          router.push("/");
-          router.refresh();
-        }, 2000);
-      }
+      setSuccess(true);
     } catch {
-      setError("An unexpected error occurred");
+      setError("An unexpected error occurred.");
+    } finally {
       setLoading(false);
     }
   };
 
   if (success) {
     return (
-      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-zinc-50 dark:bg-black pt-20 pb-20 px-6">
-        <div className="w-full max-w-md space-y-8 text-center">
-          <div className="p-6 bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700 rounded text-green-700 dark:text-green-400">
-            <h2 className="text-xl font-semibold mb-2">Account Created!</h2>
-            <p>
-              Your account has been created. You&apos;ll need to be approved by an
-              admin before accessing protected pages.
-            </p>
-          </div>
+      <AuthShell
+        eyebrow="Request sent"
+        title="Account created"
+        subtitle="Your account exists now. An admin still needs to approve access before you can open the tracker."
+        footer={
+          <Link href="/auth/login" className="font-medium text-cyan-700 hover:underline dark:text-cyan-300">
+            Go to login
+          </Link>
+        }
+      >
+        <div className="rounded-md border border-green-200 bg-green-50 p-4 text-sm text-green-800 dark:border-green-900 dark:bg-green-950/40 dark:text-green-300">
+          You can sign in after your account is approved.
         </div>
-      </div>
+      </AuthShell>
     );
   }
 
   return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center bg-zinc-50 dark:bg-black pt-20 pb-20 px-6">
-      <div className="w-full max-w-md space-y-8">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight text-black dark:text-zinc-50">
-            Sign Up
-          </h1>
-          <p className="text-zinc-600 dark:text-zinc-400 mt-1">
-            Create a new account
-          </p>
+    <AuthShell
+      eyebrow="Start organized"
+      title="Create an account"
+      subtitle="Request access and start building a cleaner view of your job search."
+      footer={
+        <>
+          Already have an account?{" "}
+          <Link href="/auth/login" className="font-medium text-cyan-700 hover:underline dark:text-cyan-300">
+            Sign in
+          </Link>
+        </>
+      }
+    >
+      <div className="space-y-5">
+        <button
+          type="button"
+          onClick={handleGoogleSignup}
+          disabled={googleLoading}
+          className="flex w-full items-center justify-center gap-3 rounded-md border border-zinc-200 bg-white px-4 py-3 font-medium text-zinc-800 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-70 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
+        >
+          <FcGoogle className="h-5 w-5" aria-hidden="true" />
+          {googleLoading ? "Opening Google..." : "Sign up with Google"}
+        </button>
+
+        <div className="flex items-center gap-3 text-xs uppercase text-zinc-400 dark:text-zinc-600">
+          <span className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
+          or use email
+          <span className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
         </div>
 
         <form onSubmit={handleSignup} className="space-y-4">
-          {error && (
-            <div className="p-3 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded text-red-700 dark:text-red-400">
+          {error ? (
+            <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
               {error}
             </div>
-          )}
+          ) : null}
 
           <div>
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+            <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
               Email
             </label>
             <input
@@ -102,13 +143,13 @@ export default function SignupPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-black dark:text-zinc-50 p-2 rounded-md"
+              className="w-full rounded-md border border-zinc-300 bg-white p-3 text-zinc-950 outline-none transition focus:border-cyan-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
               placeholder="you@example.com"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+            <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
               Password
             </label>
             <input
@@ -116,49 +157,36 @@ export default function SignupPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-black dark:text-zinc-50 p-2 rounded-md"
-              placeholder="••••••••"
+              className="w-full rounded-md border border-zinc-300 bg-white p-3 text-zinc-950 outline-none transition focus:border-cyan-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+              placeholder="At least 6 characters"
               minLength={6}
             />
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-              Must be at least 6 characters
-            </p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-              Confirm Password
+            <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              Confirm password
             </label>
             <input
               type="password"
               required
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-black dark:text-zinc-50 p-2 rounded-md"
-              placeholder="••••••••"
+              className="w-full rounded-md border border-zinc-300 bg-white p-3 text-zinc-950 outline-none transition focus:border-cyan-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+              placeholder="Repeat your password"
+              minLength={6}
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-400 text-white rounded-md transition font-medium"
+            className="w-full rounded-md bg-cyan-600 px-4 py-3 font-medium text-white transition hover:bg-cyan-700 disabled:cursor-not-allowed disabled:bg-zinc-400 dark:bg-cyan-300 dark:text-zinc-950 dark:hover:bg-cyan-200"
           >
-            {loading ? "Creating account..." : "Sign Up"}
+            {loading ? "Creating account..." : "Request access"}
           </button>
         </form>
-
-        <div className="text-center text-sm text-zinc-600 dark:text-zinc-400">
-          Already have an account?{" "}
-          <Link
-            href="/auth/login"
-            className="text-blue-600 dark:text-blue-400 hover:underline"
-          >
-            Sign in
-          </Link>
-        </div>
       </div>
-    </div>
+    </AuthShell>
   );
 }
-

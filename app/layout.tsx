@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
+import AppFooter from "@/components/AppFooter";
+import AppHeader from "@/components/AppHeader";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -43,12 +45,14 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} min-h-screen bg-zinc-50 antialiased dark:bg-black`}
+        className={`${geistSans.variable} ${geistMono.variable} flex min-h-screen flex-col bg-zinc-50 antialiased dark:bg-black`}
       >
         <Script id="theme-init" strategy="beforeInteractive">
           {themeScript}
         </Script>
-        {children}
+        <AppHeader />
+        <main className="flex-1">{children}</main>
+        <AppFooter />
       </body>
     </html>
   );

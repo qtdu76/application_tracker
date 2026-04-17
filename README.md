@@ -56,6 +56,7 @@ The current migrations are in `migrations/`:
 
 - `create_user_notes_table.sql`
 - `007_auth_and_tracker_isolation.sql`
+- `008_admin_profile_approval.sql`
 
 These were copied from the original private app during extraction. They are useful, but the public repo still needs a clean initial schema migration for fresh installs, especially for the base `applications` and `contacts` tables.
 
@@ -69,6 +70,22 @@ Expected tables:
 Expected storage bucket:
 
 - `application-attachments`
+
+### Google OAuth
+
+Google sign-in is supported through Supabase Auth.
+
+To enable it:
+
+1. Create or open a Google Cloud project.
+2. Configure the Google OAuth consent screen for your app.
+3. Create a Web application OAuth Client ID.
+4. Add your site origin to Authorized JavaScript origins, for example `http://localhost:3000` while developing and your production domain later.
+5. Add your Supabase Google provider callback URL to Authorized redirect URIs. Supabase shows this URL in the Google provider settings.
+6. In Supabase, open Authentication > Providers > Google, enable Google, and paste the Google Client ID and Client Secret.
+7. In Supabase Auth URL Configuration, allow your app callback URL, for example `http://localhost:3000/auth/callback` and your production callback URL.
+
+Google Workspace is not required. A normal Google account can create the Google Cloud project and OAuth client.
 
 ## Scripts
 
@@ -108,11 +125,17 @@ ENV_FILE=/path/to/.env
 ## Project Layout
 
 ```text
-app/apps/application-tracker/   Tracker UI
+app/page.tsx                    Tracker UI
+app/_components/                Tracker-only UI components
 app/api/applications/           Application CRUD API
+app/api/admin/                  Admin user approval API
 app/api/contacts/               Contact CRUD API
 app/api/notes/                  User notes API
+app/admin/                      Admin user approval panel
 app/auth/                       Login, signup, and access denied pages
+app/auth/callback/              Supabase OAuth code exchange route
+app/profile/                    Account profile page
+app/privacy/                    Privacy policy page
 components/                     Shared app components
 utils/supabase/                 Supabase browser/server clients
 types/                          Shared TypeScript types

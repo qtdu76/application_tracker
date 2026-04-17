@@ -1,7 +1,7 @@
 "use client";
 
 import { MdApps, MdExpandLess, MdExpandMore, MdKeyboardArrowDown, MdKeyboardArrowUp } from "react-icons/md";
-import type { MobileMenuItem, MobileMenuItemId } from "../types";
+import type { MobileMenuItem, MobileMenuItemId } from "../tracker-types";
 
 interface MobileNavigationProps {
   showMobileMenu: boolean;
