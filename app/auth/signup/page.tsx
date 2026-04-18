@@ -80,9 +80,9 @@ export default function SignupPage() {
   if (success) {
     return (
       <AuthShell
-        eyebrow="Request sent"
+        eyebrow="You are in"
         title="Account created"
-        subtitle="Your account exists now. An admin still needs to approve access before you can open the tracker."
+        subtitle="Your account is ready. You can sign in and start using the tracker."
         footer={
           <Link href="/auth/login" className="font-medium text-cyan-700 hover:underline dark:text-cyan-300">
             Go to login
@@ -90,7 +90,7 @@ export default function SignupPage() {
         }
       >
         <div className="rounded-md border border-green-200 bg-green-50 p-4 text-sm text-green-800 dark:border-green-900 dark:bg-green-950/40 dark:text-green-300">
-          You can sign in after your account is approved.
+          You can sign in now. Admins can revoke access later if needed.
         </div>
       </AuthShell>
     );
@@ -100,7 +100,7 @@ export default function SignupPage() {
     <AuthShell
       eyebrow="Start organized"
       title="Create an account"
-      subtitle="Request access and start building a cleaner view of your job search."
+      subtitle="Create an account and start building a cleaner view of your job search."
       footer={
         <>
           Already have an account?{" "}
@@ -183,7 +183,7 @@ export default function SignupPage() {
             disabled={loading}
             className="w-full rounded-md bg-cyan-600 px-4 py-3 font-medium text-white transition hover:bg-cyan-700 disabled:cursor-not-allowed disabled:bg-zinc-400 dark:bg-cyan-300 dark:text-zinc-950 dark:hover:bg-cyan-200"
           >
-            {loading ? "Creating account..." : "Request access"}
+            {loading ? "Creating account..." : "Create account"}
           </button>
         </form>
       </div>

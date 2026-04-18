@@ -106,7 +106,7 @@ function AdminContent() {
     );
   }
 
-  const pendingUsers = users.filter((user) => !user.approved);
+  const revokedUsers = users.filter((user) => !user.approved);
 
   return (
     <div className="min-h-[calc(100vh-8rem)] bg-zinc-50 px-4 py-10 text-zinc-950 dark:bg-black dark:text-zinc-50 sm:px-6 lg:px-8">
@@ -117,7 +117,7 @@ function AdminContent() {
           </p>
           <h1 className="text-3xl font-semibold tracking-tight">User access</h1>
           <p className="text-zinc-600 dark:text-zinc-400">
-            Review new signups and choose who can access the tracker.
+            Review users and revoke or restore tracker access.
           </p>
         </div>
 
@@ -133,14 +133,14 @@ function AdminContent() {
             <p className="text-sm text-zinc-500 dark:text-zinc-400">Total users</p>
           </div>
           <div className="rounded-md border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
-            <p className="text-2xl font-semibold">{pendingUsers.length}</p>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">Pending approval</p>
+            <p className="text-2xl font-semibold">{revokedUsers.length}</p>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">Access revoked</p>
           </div>
           <div className="rounded-md border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
             <p className="text-2xl font-semibold">
               {users.filter((user) => user.approved).length}
             </p>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">Approved</p>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">Access enabled</p>
           </div>
         </div>
 
@@ -172,10 +172,10 @@ function AdminContent() {
                       className={`rounded-md px-2 py-1 text-xs font-medium ${
                         user.approved
                           ? "bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-300"
-                          : "bg-yellow-100 text-yellow-800 dark:bg-yellow-950/50 dark:text-yellow-300"
+                          : "bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300"
                       }`}
                     >
-                      {user.approved ? "Approved" : "Pending"}
+                      {user.approved ? "Enabled" : "Revoked"}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
@@ -196,7 +196,7 @@ function AdminContent() {
                         ? "Updating..."
                         : user.approved
                           ? "Revoke"
-                          : "Approve"}
+                          : "Restore"}
                     </button>
                   </td>
                 </tr>

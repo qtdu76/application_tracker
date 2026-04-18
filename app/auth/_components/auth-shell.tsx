@@ -45,7 +45,7 @@ export function AuthShell({ title, subtitle, eyebrow, children, footer }: AuthSh
           </div>
 
           <p className="text-sm text-zinc-500 dark:text-zinc-500">
-            New accounts need approval before they can access tracker data.
+            New accounts get access immediately. Admins can revoke access from the admin panel.
           </p>
         </section>
 

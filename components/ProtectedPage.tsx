@@ -32,7 +32,7 @@ export default function ProtectedPage({ children }: ProtectedPageProps) {
 
       setUser(currentUser);
 
-      // Check user profile and approval status
+      // Check user profile and access status
       const { data: userProfile, error } = await supabase
         .from("user_profiles")
         .select("*")
@@ -69,7 +69,7 @@ export default function ProtectedPage({ children }: ProtectedPageProps) {
 
       setProfile(userProfile as UserProfile);
 
-      // Check if user is approved
+      // Check if user access is enabled
       if (!userProfile.approved) {
         router.push("/auth/access-denied");
         return;

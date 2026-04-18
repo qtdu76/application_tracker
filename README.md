@@ -57,6 +57,7 @@ The current migrations are in `migrations/`:
 - `create_user_notes_table.sql`
 - `007_auth_and_tracker_isolation.sql`
 - `008_admin_profile_approval.sql`
+- `009_approve_new_signups_by_default.sql`
 
 These were copied from the original private app during extraction. They are useful, but the public repo still needs a clean initial schema migration for fresh installs, especially for the base `applications` and `contacts` tables.
 
@@ -81,11 +82,13 @@ To enable it:
 2. Configure the Google OAuth consent screen for your app.
 3. Create a Web application OAuth Client ID.
 4. Add your site origin to Authorized JavaScript origins, for example `http://localhost:3000` while developing and your production domain later.
-5. Add your Supabase Google provider callback URL to Authorized redirect URIs. Supabase shows this URL in the Google provider settings.
-6. In Supabase, open Authentication > Providers > Google, enable Google, and paste the Google Client ID and Client Secret.
+5. Add your Supabase Google provider callback URL to Authorized redirect URIs. Supabase shows this URL in the Google provider settings, and it looks like `https://YOUR-PROJECT.supabase.co/auth/v1/callback`.
+6. In Supabase, open Authentication > Providers > Google, enable Google, and paste the Google OAuth Client ID and Client Secret.
 7. In Supabase Auth URL Configuration, allow your app callback URL, for example `http://localhost:3000/auth/callback` and your production callback URL.
 
 Google Workspace is not required. A normal Google account can create the Google Cloud project and OAuth client.
+
+If Supabase returns `Unsupported provider: provider is not enabled`, Google is not enabled in the Supabase project configured by `NEXT_PUBLIC_SUPABASE_URL`.
 
 ## Scripts
 

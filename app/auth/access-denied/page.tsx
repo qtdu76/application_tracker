@@ -11,14 +11,13 @@ export default function AccessDeniedPage() {
             Access Denied
           </h1>
           <p className="text-yellow-700 dark:text-yellow-300">
-            Your account has been created, but you need to be approved by an
-            administrator before you can access protected pages.
+            Your account exists, but access to the tracker is currently disabled.
           </p>
         </div>
 
         <div className="space-y-4">
           <p className="text-zinc-600 dark:text-zinc-400">
-            Please contact an administrator to request access.
+            Please contact an administrator if you think this is a mistake.
           </p>
 
           <div className="flex gap-4 justify-center">

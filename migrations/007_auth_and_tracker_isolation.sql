@@ -10,7 +10,7 @@
 CREATE TABLE IF NOT EXISTS public.user_profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   email TEXT NOT NULL,
-  approved BOOLEAN NOT NULL DEFAULT false,
+  approved BOOLEAN NOT NULL DEFAULT true,
   role TEXT NOT NULL DEFAULT 'user',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -25,13 +25,13 @@ ALTER TABLE public.user_profiles
 
 UPDATE public.user_profiles
 SET
-  approved = COALESCE(approved, false),
+  approved = COALESCE(approved, true),
   role = COALESCE(role, 'user'),
   created_at = COALESCE(created_at, NOW()),
   updated_at = COALESCE(updated_at, NOW());
 
 ALTER TABLE public.user_profiles
-  ALTER COLUMN approved SET DEFAULT false,
+  ALTER COLUMN approved SET DEFAULT true,
   ALTER COLUMN role SET DEFAULT 'user',
   ALTER COLUMN created_at SET DEFAULT NOW(),
   ALTER COLUMN updated_at SET DEFAULT NOW();
@@ -94,7 +94,7 @@ SET search_path = public
 AS $$
 BEGIN
   INSERT INTO public.user_profiles (id, email, approved, role, created_at, updated_at)
-  VALUES (NEW.id, NEW.email, false, 'user', NOW(), NOW())
+  VALUES (NEW.id, NEW.email, true, 'user', NOW(), NOW())
   ON CONFLICT (id) DO UPDATE
     SET email = EXCLUDED.email,
         updated_at = NOW();
@@ -136,7 +136,7 @@ INSERT INTO public.user_profiles (id, email, approved, role, created_at, updated
 SELECT
   au.id,
   au.email,
-  false,
+  true,
   'user',
   COALESCE(au.created_at, NOW()),
   NOW()

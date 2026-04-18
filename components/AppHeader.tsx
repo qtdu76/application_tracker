@@ -121,7 +121,7 @@ export default function AppHeader() {
                     </p>
                     {profile ? (
                       <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                        {profile.role === "admin" ? "Admin" : "User"} / {profile.approved ? "Approved" : "Pending"}
+                        {profile.role === "admin" ? "Admin" : "User"} / {profile.approved ? "Access enabled" : "Access revoked"}
                       </p>
                     ) : null}
                   </div>

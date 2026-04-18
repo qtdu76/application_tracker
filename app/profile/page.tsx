@@ -61,7 +61,7 @@ function ProfileContent() {
             <div>
               <dt className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Access</dt>
               <dd className="mt-1 font-medium">
-                {profile ? (profile.approved ? "Approved" : "Pending") : "Loading..."}
+                {profile ? (profile.approved ? "Enabled" : "Revoked") : "Loading..."}
               </dd>
             </div>
             <div>
