@@ -3,18 +3,18 @@ import { cookies } from 'next/headers'
 
 export async function createClient() {
   const cookieStore = await cookies()
-  
-  // Support both standard anon key and publishable key naming
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 
-                  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY
+  const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+                         process.env.NEXT_PUBLIC_PUBLISHABLE_KEY ||
+                         process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY ||
+                         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !anonKey) {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !publishableKey) {
     throw new Error('Missing Supabase environment variables')
   }
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
-    anonKey,
+    publishableKey,
     {
       cookies: {
         getAll() {

@@ -37,8 +37,13 @@ Fill in your Supabase values:
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-or-publishable-key
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-sb-publishable-key
+SUPABASE_SECRET_KEY=your-sb-secret-key
 ```
+
+`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` is safe for browser use. `SUPABASE_SECRET_KEY`
+is server-only and is only needed for admin actions such as deleting a user.
+Legacy `NEXT_PUBLIC_SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` values are still supported.
 
 Run the development server:
 

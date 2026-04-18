@@ -18,6 +18,7 @@ interface UserWithProfile {
 function AdminContent() {
   const [users, setUsers] = useState<UserWithProfile[]>([]);
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -59,6 +60,7 @@ function AdminContent() {
         }
 
         setProfile(userProfile as UserProfile);
+        setCurrentUserId(user.id);
         await fetchUsers();
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : "Failed to load admin panel");
@@ -93,6 +95,36 @@ function AdminContent() {
       );
     } catch (updateError) {
       setError(updateError instanceof Error ? updateError.message : "Failed to update user");
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const handleDeleteUser = async (userId: string, email: string) => {
+    const confirmed = window.confirm(
+      `Delete ${email}? This removes the Supabase Auth user and lets the email sign up again.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setUpdating(`delete:${userId}`);
+      setError(null);
+
+      const res = await fetch(`/api/admin/users/${userId}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to delete user");
+      }
+
+      setUsers((currentUsers) => currentUsers.filter((currentUser) => currentUser.id !== userId));
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : "Failed to delete user");
     } finally {
       setUpdating(null);
     }
@@ -156,51 +188,73 @@ function AdminContent() {
               </tr>
             </thead>
             <tbody>
-              {users.map((user) => (
-                <tr
-                  key={user.id}
-                  className="border-b border-zinc-100 last:border-b-0 dark:border-zinc-900"
-                >
-                  <td className="px-4 py-3 font-medium">{user.email}</td>
-                  <td className="px-4 py-3">
-                    <span className="rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
-                      {user.role}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`rounded-md px-2 py-1 text-xs font-medium ${
-                        user.approved
-                          ? "bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-300"
-                          : "bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300"
-                      }`}
-                    >
-                      {user.approved ? "Enabled" : "Revoked"}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
-                    {new Date(user.created_at).toLocaleDateString()}
-                  </td>
-                  <td className="px-4 py-3">
-                    <button
-                      type="button"
-                      onClick={() => handleApprovalChange(user.id, !user.approved)}
-                      disabled={updating === user.id}
-                      className={`rounded-md px-3 py-2 font-medium transition disabled:cursor-not-allowed disabled:opacity-60 ${
-                        user.approved
-                          ? "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
-                          : "bg-cyan-600 text-white hover:bg-cyan-700 dark:bg-cyan-300 dark:text-zinc-950 dark:hover:bg-cyan-200"
-                      }`}
-                    >
-                      {updating === user.id
-                        ? "Updating..."
-                        : user.approved
-                          ? "Revoke"
-                          : "Restore"}
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {users.map((user) => {
+                const isProtectedAccount = user.role === "admin" || user.id === currentUserId;
+                const isUpdatingApproval = updating === user.id;
+                const isDeleting = updating === `delete:${user.id}`;
+
+                return (
+                  <tr
+                    key={user.id}
+                    className="border-b border-zinc-100 last:border-b-0 dark:border-zinc-900"
+                  >
+                    <td className="px-4 py-3 font-medium">{user.email}</td>
+                    <td className="px-4 py-3">
+                      <span className="rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
+                        {user.role}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`rounded-md px-2 py-1 text-xs font-medium ${
+                          user.approved
+                            ? "bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-300"
+                            : "bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300"
+                        }`}
+                      >
+                        {user.approved ? "Enabled" : "Revoked"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
+                      {new Date(user.created_at).toLocaleDateString()}
+                    </td>
+                    <td className="px-4 py-3">
+                      {isProtectedAccount ? (
+                        <span className="text-sm text-zinc-500 dark:text-zinc-500">
+                          Protected
+                        </span>
+                      ) : (
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleApprovalChange(user.id, !user.approved)}
+                            disabled={Boolean(updating)}
+                            className={`rounded-md px-3 py-2 font-medium transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                              user.approved
+                                ? "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                                : "bg-cyan-600 text-white hover:bg-cyan-700 dark:bg-cyan-300 dark:text-zinc-950 dark:hover:bg-cyan-200"
+                            }`}
+                          >
+                            {isUpdatingApproval
+                              ? "Updating..."
+                              : user.approved
+                                ? "Revoke"
+                                : "Restore"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteUser(user.id, user.email)}
+                            disabled={Boolean(updating)}
+                            className="rounded-md bg-red-600 px-3 py-2 font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-red-500 dark:hover:bg-red-400"
+                          >
+                            {isDeleting ? "Deleting..." : "Delete"}
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
 
