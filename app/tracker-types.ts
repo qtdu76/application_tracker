@@ -2,7 +2,7 @@ import type { ApplicationStatus } from "@/types/application";
 import type { ReactElement } from "react";
 
 export type ViewMode = "tracker" | "notes" | "contacts" | "docs";
-export type StageFilter = ApplicationStatus | "all";
+export type StageFilter = ApplicationStatus | "archive" | "all";
 export type TrackerDisplayMode = "rows" | "grid";
 export type MobileMenuStage =
   | "not_applied"
@@ -11,6 +11,7 @@ export type MobileMenuStage =
   | "offer"
   | "pending"
   | "rejected"
+  | "archive"
   | "all";
 export type MobileMenuItemId = ViewMode | MobileMenuStage;
 
@@ -36,6 +37,7 @@ export const MOBILE_MENU_DEFAULT_ORDER: MobileMenuItemId[] = [
   "offer",
   "pending",
   "rejected",
+  "archive",
   "all",
   "docs",
 ];

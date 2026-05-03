@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Application, ApplicationInsert, ApplicationStatus, ApplicationUpdate, CompanyType } from "@/types/application";
 import {
+  MdArchive,
   MdApps,
   MdArticle,
   MdChecklist,
@@ -76,6 +77,9 @@ function formatStageLabel(stage: StageFilter): string {
   if (stage === "all") {
     return "All Applications";
   }
+  if (stage === "archive") {
+    return "Archived";
+  }
   return stage
     .split("_")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
@@ -93,6 +97,16 @@ function getViewLabel(viewMode: ViewMode): string {
     case "docs":
       return "Documentation";
   }
+}
+
+function sortApplicationsByStar(applications: Application[]): Application[] {
+  return [...applications].sort((left, right) => {
+    if (left.is_starred !== right.is_starred) {
+      return left.is_starred ? -1 : 1;
+    }
+
+    return new Date(right.created_at).getTime() - new Date(left.created_at).getTime();
+  });
 }
 
 function ApplicationTrackerContent() {
@@ -131,6 +145,7 @@ function ApplicationTrackerContent() {
     status: "not_applied",
     deadline: null,
     website: null,
+    career_website: null,
     notes: null,
   });
 
@@ -169,7 +184,7 @@ function ApplicationTrackerContent() {
       const res = await fetch("/api/applications");
       if (!res.ok) throw new Error("Failed to fetch applications");
       const data = await res.json();
-      setApplications(data);
+      setApplications(sortApplicationsByStar(data));
     } catch (fetchError) {
       setError(fetchError instanceof Error ? fetchError.message : "Failed to load applications");
     } finally {
@@ -209,82 +224,92 @@ function ApplicationTrackerContent() {
 
   const statusCounts = useMemo(
     () => ({
-      not_applied: applications.filter((application) => application.status === "not_applied").length,
-      applied: applications.filter((application) => application.status === "applied").length,
-      interview: applications.filter((application) => application.status === "interview").length,
-      offer: applications.filter((application) => application.status === "offer").length,
-      successful: applications.filter((application) => application.status === "successful").length,
-      pending: applications.filter((application) => application.status === "pending").length,
-      rejected: applications.filter((application) => application.status === "rejected").length,
+      not_applied: applications.filter((application) => application.status === "not_applied" && !application.is_archived).length,
+      applied: applications.filter((application) => application.status === "applied" && !application.is_archived).length,
+      interview: applications.filter((application) => application.status === "interview" && !application.is_archived).length,
+      offer: applications.filter((application) => application.status === "offer" && !application.is_archived).length,
+      successful: applications.filter((application) => application.status === "successful" && !application.is_archived).length,
+      pending: applications.filter((application) => application.status === "pending" && !application.is_archived).length,
+      rejected: applications.filter((application) => application.status === "rejected" && !application.is_archived).length,
+      archive: applications.filter((application) => application.is_archived).length,
       all: applications.length,
     }),
     [applications],
   );
 
-  const filteredApplications = applications.filter((application) => {
-    if (statusFilter !== "all" && application.status !== statusFilter) return false;
-    if (typeFilter !== "all" && application.company_type !== typeFilter) return false;
+  const filteredApplications = useMemo(
+    () =>
+      applications.filter((application) => {
+        if (statusFilter === "archive") {
+          if (!application.is_archived) return false;
+        } else if (statusFilter !== "all") {
+          if (application.is_archived) return false;
+          if (application.status !== statusFilter) return false;
+        }
+        if (typeFilter !== "all" && application.company_type !== typeFilter) return false;
 
-    if (industryFilter !== "all" && application.industry) {
-      const applicationIndustries = application.industry
-        .split(",")
-        .map((industry) => industry.trim().toLowerCase())
-        .filter(Boolean);
-      if (!applicationIndustries.includes(industryFilter.toLowerCase())) return false;
-    } else if (industryFilter !== "all" && !application.industry) {
-      return false;
-    }
+        if (industryFilter !== "all" && application.industry) {
+          const applicationIndustries = application.industry
+            .split(",")
+            .map((industry) => industry.trim().toLowerCase())
+            .filter(Boolean);
+          if (!applicationIndustries.includes(industryFilter.toLowerCase())) return false;
+        } else if (industryFilter !== "all" && !application.industry) {
+          return false;
+        }
 
-    if (locationFilter !== "all" && application.location) {
-      const applicationLocations = application.location
-        .split(",")
-        .map((location) => location.trim().toLowerCase())
-        .filter(Boolean);
-      if (!applicationLocations.includes(locationFilter.toLowerCase())) return false;
-    } else if (locationFilter !== "all" && !application.location) {
-      return false;
-    }
+        if (locationFilter !== "all" && application.location) {
+          const applicationLocations = application.location
+            .split(",")
+            .map((location) => location.trim().toLowerCase())
+            .filter(Boolean);
+          if (!applicationLocations.includes(locationFilter.toLowerCase())) return false;
+        } else if (locationFilter !== "all" && !application.location) {
+          return false;
+        }
 
-    if (deadlineFilter !== "all") {
-      if (!application.deadline) return false;
-      const deadline = new Date(application.deadline);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+        if (deadlineFilter !== "all") {
+          if (!application.deadline) return false;
+          const deadline = new Date(application.deadline);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
 
-      if (deadlineFilter === "upcoming") {
-        return deadline >= today;
-      }
-      if (deadlineFilter === "past") {
-        return deadline < today;
-      }
-      if (deadlineFilter === "this_week") {
-        const weekFromNow = new Date(today);
-        weekFromNow.setDate(weekFromNow.getDate() + 7);
-        return deadline >= today && deadline <= weekFromNow;
-      }
-    }
+          if (deadlineFilter === "upcoming") {
+            return deadline >= today;
+          }
+          if (deadlineFilter === "past") {
+            return deadline < today;
+          }
+          if (deadlineFilter === "this_week") {
+            const weekFromNow = new Date(today);
+            weekFromNow.setDate(weekFromNow.getDate() + 7);
+            return deadline >= today && deadline <= weekFromNow;
+          }
+        }
 
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      const matchesCompany = application.company.toLowerCase().includes(query);
-      const matchesLocation = application.location
-        ? application.location.split(",").some((location) => location.trim().toLowerCase().includes(query))
-        : false;
-      const matchesIndustry = application.industry
-        ? application.industry.split(",").some((industry) => industry.trim().toLowerCase().includes(query))
-        : false;
-      const matchesRole = application.role
-        ? application.role.split(",").some((role) => role.trim().toLowerCase().includes(query))
-        : false;
-      const matchesNotes = application.notes?.toLowerCase().includes(query) || false;
+        if (searchQuery.trim()) {
+          const query = searchQuery.toLowerCase();
+          const matchesCompany = application.company.toLowerCase().includes(query);
+          const matchesLocation = application.location
+            ? application.location.split(",").some((location) => location.trim().toLowerCase().includes(query))
+            : false;
+          const matchesIndustry = application.industry
+            ? application.industry.split(",").some((industry) => industry.trim().toLowerCase().includes(query))
+            : false;
+          const matchesRole = application.role
+            ? application.role.split(",").some((role) => role.trim().toLowerCase().includes(query))
+            : false;
+          const matchesNotes = application.notes?.toLowerCase().includes(query) || false;
 
-      if (!matchesCompany && !matchesLocation && !matchesIndustry && !matchesRole && !matchesNotes) {
-        return false;
-      }
-    }
+          if (!matchesCompany && !matchesLocation && !matchesIndustry && !matchesRole && !matchesNotes) {
+            return false;
+          }
+        }
 
-    return true;
-  });
+        return true;
+      }),
+    [applications, deadlineFilter, industryFilter, locationFilter, searchQuery, statusFilter, typeFilter],
+  );
 
   const activeFilterCount = [
     typeFilter !== "all",
@@ -348,6 +373,7 @@ function ApplicationTrackerContent() {
         status: "not_applied",
         deadline: null,
         website: null,
+        career_website: null,
         notes: null,
       });
       await fetchApplications();
@@ -382,8 +408,10 @@ function ApplicationTrackerContent() {
   const handleApplicationFieldChange = async (applicationId: string, patch: ApplicationUpdate) => {
     const previousApplications = applications;
     setApplications((currentApplications) =>
-      currentApplications.map((application) =>
-        application.id === applicationId ? { ...application, ...patch } : application,
+      sortApplicationsByStar(
+        currentApplications.map((application) =>
+          application.id === applicationId ? { ...application, ...patch } : application,
+        ),
       ),
     );
 
@@ -396,8 +424,10 @@ function ApplicationTrackerContent() {
       if (!res.ok) throw new Error("Failed to update application");
       const updatedApplication = await res.json();
       setApplications((currentApplications) =>
-        currentApplications.map((application) =>
-          application.id === applicationId ? updatedApplication : application,
+        sortApplicationsByStar(
+          currentApplications.map((application) =>
+            application.id === applicationId ? updatedApplication : application,
+          ),
         ),
       );
     } catch (updateError) {
@@ -422,17 +452,18 @@ function ApplicationTrackerContent() {
 
   const handleAdd = () => {
     setEditingApplication(null);
-    setFormData({
-      company: "",
-      role: null,
-      company_type: null,
-      location: null,
-      industry: null,
-      status: "not_applied",
-      deadline: null,
-      website: null,
-      notes: null,
-    });
+      setFormData({
+        company: "",
+        role: null,
+        company_type: null,
+        location: null,
+        industry: null,
+        status: "not_applied",
+        deadline: null,
+        website: null,
+        career_website: null,
+        notes: null,
+      });
     setShowModal(true);
   };
 
@@ -552,6 +583,7 @@ function ApplicationTrackerContent() {
             status: application.status,
             deadline: application.deadline,
             website: application.website,
+            career_website: application.career_website,
             notes: notes.trim() || null,
           }),
         });
@@ -672,6 +704,16 @@ function ApplicationTrackerContent() {
               icon: <MdSouth className="text-2xl text-red-600 dark:text-red-400" />,
               iconShell: "border-red-200 bg-red-50 dark:border-red-900/60 dark:bg-red-950/40",
               accent: "from-red-400/90 to-red-600/90",
+            };
+          case "archive":
+            return {
+              id: itemId,
+              label: "Archive",
+              description: "Filed away but still searchable",
+              count: statusCounts.archive,
+              icon: <MdArchive className="text-2xl text-slate-600 dark:text-slate-300" />,
+              iconShell: "border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-950/40",
+              accent: "from-slate-400/90 to-slate-600/90",
             };
           case "all":
             return {

@@ -4,6 +4,7 @@ import { type Dispatch, type SetStateAction, useEffect, useState } from "react";
 import type { Application, ApplicationStatus, ApplicationUpdate, Attachment, CompanyType } from "@/types/application";
 import {
   MdAdd,
+  MdArchive,
   MdAttachFile,
   MdDelete,
   MdEmail,
@@ -14,6 +15,9 @@ import {
   MdLaunch,
   MdPhone,
   MdPersonAdd,
+  MdStar,
+  MdStarBorder,
+  MdUnarchive,
   MdViewList,
 } from "react-icons/md";
 import type { StageFilter, TrackerDisplayMode } from "../tracker-types";
@@ -165,6 +169,12 @@ function getStageChipClasses(stage: StageFilter, isActive: boolean): string {
       countActive: "bg-white/20 text-white dark:bg-zinc-950/10 dark:text-zinc-950",
       countInactive: "bg-red-100 text-red-700 dark:bg-red-900/60 dark:text-red-200",
     },
+    archive: {
+      active: "bg-slate-600 text-white dark:bg-slate-300 dark:text-zinc-950",
+      inactive: "bg-slate-50 text-slate-800 ring-1 ring-inset ring-slate-100 hover:bg-slate-100 dark:bg-slate-950/40 dark:text-slate-200 dark:ring-slate-800/60 dark:hover:bg-slate-900/50",
+      countActive: "bg-white/20 text-white dark:bg-zinc-950/10 dark:text-zinc-950",
+      countInactive: "bg-slate-100 text-slate-700 dark:bg-slate-900/60 dark:text-slate-200",
+    },
     all: {
       active: "bg-indigo-600 text-white dark:bg-indigo-300 dark:text-zinc-950",
       inactive: "bg-white text-zinc-600 ring-1 ring-inset ring-indigo-100 hover:bg-indigo-50 dark:bg-zinc-900 dark:text-zinc-300 dark:ring-indigo-900/50 dark:hover:bg-indigo-950/30",
@@ -186,6 +196,7 @@ function getStageCountClasses(stage: StageFilter, isActive: boolean): string {
     offer: { active: "bg-zinc-950/10 text-zinc-950", inactive: "bg-lime-100 text-lime-700 dark:bg-lime-900/60 dark:text-lime-200" },
     successful: { active: "bg-zinc-950/10 text-zinc-950", inactive: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-200" },
     rejected: { active: "bg-white/20 text-white dark:bg-zinc-950/10 dark:text-zinc-950", inactive: "bg-red-100 text-red-700 dark:bg-red-900/60 dark:text-red-200" },
+    archive: { active: "bg-white/20 text-white dark:bg-zinc-950/10 dark:text-zinc-950", inactive: "bg-slate-100 text-slate-700 dark:bg-slate-900/60 dark:text-slate-200" },
     all: { active: "bg-white/20 text-white dark:bg-zinc-950/15 dark:text-zinc-950", inactive: "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-200" },
   };
 
@@ -209,6 +220,7 @@ interface TrackerWorkspaceProps {
     successful: number;
     pending: number;
     rejected: number;
+    archive: number;
     all: number;
   };
   statusFilter: StageFilter;
@@ -341,9 +353,97 @@ export function TrackerWorkspace({
 
   const cleanTextValue = (value: string) => value.trim() || null;
 
+  const toggleStarredState = (application: Application) => {
+    onApplicationFieldChange(application.id, { is_starred: !application.is_starred });
+  };
+
+  const toggleArchivedState = (application: Application) => {
+    onApplicationFieldChange(application.id, { is_archived: !application.is_archived });
+  };
+
+  const getStatusActionClasses = (status: ApplicationStatus) => {
+    switch (status) {
+      case "not_applied":
+        return "border-teal-200 bg-teal-50 text-teal-800 focus:border-teal-400 focus:ring-teal-200/70 dark:border-teal-900/60 dark:bg-teal-950/40 dark:text-teal-200 dark:focus:border-teal-300 dark:focus:ring-teal-900/60";
+      case "applied":
+        return "border-cyan-200 bg-cyan-50 text-cyan-800 focus:border-cyan-400 focus:ring-cyan-200/70 dark:border-cyan-900/60 dark:bg-cyan-950/40 dark:text-cyan-200 dark:focus:border-cyan-300 dark:focus:ring-cyan-900/60";
+      case "interview":
+        return "border-amber-200 bg-amber-50 text-amber-800 focus:border-amber-400 focus:ring-amber-200/70 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200 dark:focus:border-amber-300 dark:focus:ring-amber-900/60";
+      case "pending":
+        return "border-orange-200 bg-orange-50 text-orange-800 focus:border-orange-400 focus:ring-orange-200/70 dark:border-orange-900/60 dark:bg-orange-950/40 dark:text-orange-200 dark:focus:border-orange-300 dark:focus:ring-orange-900/60";
+      case "offer":
+        return "border-lime-200 bg-lime-50 text-lime-800 focus:border-lime-400 focus:ring-lime-200/70 dark:border-lime-900/60 dark:bg-lime-950/40 dark:text-lime-200 dark:focus:border-lime-300 dark:focus:ring-lime-900/60";
+      case "successful":
+        return "border-emerald-200 bg-emerald-50 text-emerald-800 focus:border-emerald-400 focus:ring-emerald-200/70 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-200 dark:focus:border-emerald-300 dark:focus:ring-emerald-900/60";
+      case "rejected":
+        return "border-red-200 bg-red-50 text-red-800 focus:border-red-400 focus:ring-red-200/70 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200 dark:focus:border-red-300 dark:focus:ring-red-900/60";
+    }
+  };
+
+  const renderApplicationActions = (app: Application) => (
+    <div className="rounded-3xl border border-zinc-200 bg-white/90 p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/90">
+      <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
+        Actions
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div>
+          <div className="relative">
+            <select
+              value={app.status}
+              onChange={(event) => onStatusChange(app.id, event.target.value as ApplicationStatus)}
+              className={`h-12 w-full appearance-none rounded-2xl border px-4 pr-11 text-sm font-semibold outline-none transition focus:ring-4 dark:focus:ring-white/10 ${getStatusActionClasses(app.status)}`}
+            >
+              {statusOptions.map((status) => (
+                <option key={status} value={status}>
+                  {formatStatus(status)}
+                </option>
+              ))}
+            </select>
+            <SelectArrow />
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => toggleStarredState(app)}
+          className={`inline-flex h-12 items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-medium transition ${
+            app.is_starred
+              ? "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-300 dark:hover:bg-amber-950/60"
+              : "border-zinc-200 bg-white text-zinc-700 hover:border-amber-300 hover:text-amber-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:border-amber-800 dark:hover:text-amber-300"
+          }`}
+        >
+          {app.is_starred ? <MdStar className="text-base" /> : <MdStarBorder className="text-base" />}
+          {app.is_starred ? "Starred" : "Star"}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => toggleArchivedState(app)}
+          className={`inline-flex h-12 items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-medium transition ${
+            app.is_archived
+              ? "border-slate-300 bg-slate-100 text-slate-700 hover:bg-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+              : "border-zinc-200 bg-white text-zinc-700 hover:border-slate-300 hover:text-slate-800 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:border-slate-700 dark:hover:text-slate-200"
+          }`}
+        >
+          {app.is_archived ? <MdUnarchive className="text-base" /> : <MdArchive className="text-base" />}
+          {app.is_archived ? "Unarchive" : "Archive"}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onDelete(app.id)}
+          className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-red-200 bg-white px-4 text-sm font-medium text-red-600 transition hover:bg-red-50 dark:border-red-900/60 dark:bg-zinc-800 dark:text-red-300 dark:hover:bg-red-950/40"
+        >
+          <MdDelete className="text-base" />
+          Delete
+        </button>
+      </div>
+    </div>
+  );
+
   const saveTextFieldOnBlur = (
     application: Application,
-    field: "company" | "role" | "location" | "industry" | "website",
+    field: "company" | "role" | "location" | "industry" | "website" | "career_website",
     value: string,
   ) => {
     const nextValue = field === "company" ? value.trim() : cleanTextValue(value);
@@ -384,26 +484,6 @@ export function TrackerWorkspace({
             placeholder="e.g. Software Engineer"
             className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-black outline-none transition placeholder:text-zinc-400 focus:border-zinc-400 focus:ring-4 focus:ring-zinc-200/70 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50 dark:placeholder:text-zinc-500 dark:focus:border-white dark:focus:ring-white/10"
           />
-        </div>
-
-        <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-400">
-            Status
-          </label>
-          <div className="relative">
-            <select
-              value={app.status}
-              onChange={(event) => onStatusChange(app.id, event.target.value as ApplicationStatus)}
-              className="w-full appearance-none rounded-2xl border border-zinc-200 bg-white px-4 py-3 pr-11 text-sm font-medium text-black outline-none transition focus:border-zinc-400 focus:ring-4 focus:ring-zinc-200/70 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50 dark:focus:border-white dark:focus:ring-white/10"
-            >
-              {statusOptions.map((status) => (
-                <option key={status} value={status}>
-                  {formatStatus(status)}
-                </option>
-              ))}
-            </select>
-            <SelectArrow />
-          </div>
         </div>
 
         <div>
@@ -478,6 +558,19 @@ export function TrackerWorkspace({
             type="url"
             defaultValue={app.website || ""}
             onBlur={(event) => saveTextFieldOnBlur(app, "website", event.currentTarget.value)}
+            placeholder="https://..."
+            className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-black outline-none transition placeholder:text-zinc-400 focus:border-zinc-400 focus:ring-4 focus:ring-zinc-200/70 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50 dark:placeholder:text-zinc-500 dark:focus:border-white dark:focus:ring-white/10"
+          />
+        </div>
+
+        <div className="sm:col-span-2">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-400">
+            Careers / Job Page
+          </label>
+          <input
+            type="url"
+            defaultValue={app.career_website || ""}
+            onBlur={(event) => saveTextFieldOnBlur(app, "career_website", event.currentTarget.value)}
             placeholder="https://..."
             className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-black outline-none transition placeholder:text-zinc-400 focus:border-zinc-400 focus:ring-4 focus:ring-zinc-200/70 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50 dark:placeholder:text-zinc-500 dark:focus:border-white dark:focus:ring-white/10"
           />
@@ -588,7 +681,9 @@ export function TrackerWorkspace({
                       <option value="interview">Interview</option>
                       <option value="offer">Offer</option>
                       <option value="pending">Pending</option>
+                      <option value="successful">Successful</option>
                       <option value="rejected">Rejected</option>
+                      <option value="archive">Archive</option>
                     </select>
                     <SelectArrow />
                   </div>
@@ -712,6 +807,18 @@ export function TrackerWorkspace({
                           <h3 className="truncate text-lg font-semibold text-black dark:text-zinc-50">
                             {app.company}
                           </h3>
+                          {app.is_starred ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-1 text-[11px] font-semibold text-amber-700 dark:bg-amber-950/60 dark:text-amber-300">
+                              <MdStar className="text-sm" />
+                              Starred
+                            </span>
+                          ) : null}
+                          {app.is_archived ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                              <MdArchive className="text-sm" />
+                              Archived
+                            </span>
+                          ) : null}
                           <span
                             className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold text-white ${getStatusColor(app.status)}`}
                           >
@@ -762,37 +869,7 @@ export function TrackerWorkspace({
 
                   {isExpanded ? (
                     <div className="space-y-4 border-t border-zinc-200 bg-zinc-50 px-4 pb-4 pt-4 dark:border-zinc-800 dark:bg-zinc-950">
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <div>
-                          <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
-                            Status
-                          </label>
-                          <div className="relative">
-                            <select
-                              value={app.status}
-                              onChange={(e) => onStatusChange(app.id, e.target.value as ApplicationStatus)}
-                              className="w-full appearance-none rounded-2xl border border-zinc-300 bg-white px-3 py-2 pr-11 text-sm font-medium text-black outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
-                            >
-                              {statusOptions.map((status) => (
-                                <option key={status} value={status}>
-                                  {formatStatus(status)}
-                                </option>
-                              ))}
-                            </select>
-                            <SelectArrow />
-                          </div>
-                        </div>
-                        <div className="flex items-end">
-                          <button
-                            type="button"
-                            onClick={() => onAddContact(app)}
-                            className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 transition hover:border-blue-300 hover:text-blue-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-blue-800 dark:hover:text-blue-300"
-                          >
-                            <MdPersonAdd className="text-lg" />
-                            Add Contact
-                          </button>
-                        </div>
-                      </div>
+                      {renderApplicationActions(app)}
 
                       <div className="grid gap-3">
                         {app.location ? (
@@ -843,13 +920,24 @@ export function TrackerWorkspace({
                             Website
                           </a>
                         ) : null}
+                        {app.career_website ? (
+                          <a
+                            href={app.career_website}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-700 transition hover:border-cyan-300 hover:text-cyan-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-cyan-800 dark:hover:text-cyan-300"
+                          >
+                            <MdLaunch className="text-sm" />
+                            Job Page
+                          </a>
+                        ) : null}
                         <button
                           type="button"
-                          onClick={() => onDelete(app.id)}
-                          className="inline-flex items-center gap-2 rounded-full border border-red-200 bg-white px-3 py-2 text-xs font-medium text-red-600 transition hover:bg-red-50 dark:border-red-900/60 dark:bg-zinc-900 dark:text-red-400 dark:hover:bg-red-950/40"
+                          onClick={() => onAddContact(app)}
+                          className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-700 transition hover:border-blue-300 hover:text-blue-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-blue-800 dark:hover:text-blue-300"
                         >
-                          <MdDelete className="text-sm" />
-                          Delete
+                          <MdPersonAdd className="text-sm" />
+                          Add Contact
                         </button>
                       </div>
 
@@ -947,16 +1035,17 @@ export function TrackerWorkspace({
       <div className="hidden md:block">
         <div className="flex flex-col gap-3 rounded-3xl border border-cyan-100 bg-white/90 p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80">
           <div className="flex min-w-0 gap-2 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {[
-              { key: "not_applied", label: "Not Applied" },
-              { key: "applied", label: "Applied" },
-              { key: "interview", label: "Interview" },
-              { key: "pending", label: "Pending" },
-              { key: "offer", label: "Offer" },
-              { key: "successful", label: "Successful" },
-              { key: "rejected", label: "Rejected" },
-              { key: "all", label: "All" },
-            ].map((tab) => {
+              {[
+                { key: "not_applied", label: "Not Applied" },
+                { key: "applied", label: "Applied" },
+                { key: "interview", label: "Interview" },
+                { key: "pending", label: "Pending" },
+                { key: "offer", label: "Offer" },
+                { key: "successful", label: "Successful" },
+                { key: "rejected", label: "Rejected" },
+                { key: "archive", label: "Archive" },
+                { key: "all", label: "All" },
+              ].map((tab) => {
               const isActive = statusFilter === tab.key;
               const count = statusCounts[tab.key as keyof typeof statusCounts];
               return (
@@ -975,7 +1064,7 @@ export function TrackerWorkspace({
               );
             })}
           </div>
-          <div>
+          <div className="grid gap-3 lg:grid-cols-[minmax(240px,1.5fr)_minmax(150px,0.9fr)_minmax(150px,0.9fr)_minmax(150px,0.9fr)_minmax(150px,0.9fr)_auto]">
             <input
               type="text"
               placeholder="Search company, role, location, notes..."
@@ -983,120 +1072,102 @@ export function TrackerWorkspace({
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-black outline-none transition placeholder:text-zinc-400 focus:border-zinc-400 focus:ring-4 focus:ring-zinc-200/70 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:placeholder:text-zinc-500 dark:focus:border-white dark:focus:ring-white/10"
             />
-          </div>
-        </div>
-
-        <div className="mt-4 flex flex-col flex-wrap items-stretch gap-4 sm:flex-row sm:items-end">
-          <div className="w-full flex-1 sm:min-w-[200px]">
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-400">
-              Company Type
-            </label>
-            <div className="relative">
-              <select
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value as CompanyType | "all")}
-                className="w-full appearance-none rounded-2xl border border-zinc-200 bg-white px-4 py-3 pr-11 text-sm text-black outline-none transition focus:border-zinc-400 focus:ring-4 focus:ring-zinc-200/70 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50 dark:focus:border-white dark:focus:ring-white/10"
-              >
-                <option value="all">All Types</option>
-                <option value="established">Established</option>
-                <option value="startup">Startup</option>
-              </select>
-              <SelectArrow />
+            <div className="w-full min-w-0">
+              <div className="relative">
+                <select
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value as CompanyType | "all")}
+                  className="w-full appearance-none rounded-2xl border border-zinc-200 bg-white px-4 py-3 pr-11 text-sm text-black outline-none transition focus:border-zinc-400 focus:ring-4 focus:ring-zinc-200/70 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50 dark:focus:border-white dark:focus:ring-white/10"
+                >
+                  <option value="all">All Types</option>
+                  <option value="established">Established</option>
+                  <option value="startup">Startup</option>
+                </select>
+                <SelectArrow />
+              </div>
             </div>
-          </div>
-          <div className="w-full flex-1 sm:min-w-[200px]">
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-400">
-              Industry
-            </label>
-            <div className="relative">
-              <select
-                value={industryFilter}
-                onChange={(e) => setIndustryFilter(e.target.value)}
-                className="w-full appearance-none rounded-2xl border border-zinc-200 bg-white px-4 py-3 pr-11 text-sm text-black outline-none transition focus:border-zinc-400 focus:ring-4 focus:ring-zinc-200/70 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50 dark:focus:border-white dark:focus:ring-white/10"
-              >
-                <option value="all">All Industries</option>
-                {uniqueIndustries.map((industryKey) => {
-                  const displayName = industryMap.get(industryKey) || industryKey;
-                  return (
-                    <option key={industryKey} value={industryKey}>
-                      {displayName}
-                    </option>
-                  );
-                })}
-              </select>
-              <SelectArrow />
+            <div className="w-full min-w-0">
+              <div className="relative">
+                <select
+                  value={industryFilter}
+                  onChange={(e) => setIndustryFilter(e.target.value)}
+                  className="w-full appearance-none rounded-2xl border border-zinc-200 bg-white px-4 py-3 pr-11 text-sm text-black outline-none transition focus:border-zinc-400 focus:ring-4 focus:ring-zinc-200/70 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50 dark:focus:border-white dark:focus:ring-white/10"
+                >
+                  <option value="all">All Industries</option>
+                  {uniqueIndustries.map((industryKey) => {
+                    const displayName = industryMap.get(industryKey) || industryKey;
+                    return (
+                      <option key={industryKey} value={industryKey}>
+                        {displayName}
+                      </option>
+                    );
+                  })}
+                </select>
+                <SelectArrow />
+              </div>
             </div>
-          </div>
-          <div className="w-full flex-1 sm:min-w-[200px]">
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-400">
-              Location
-            </label>
-            <div className="relative">
-              <select
-                value={locationFilter}
-                onChange={(e) => setLocationFilter(e.target.value)}
-                className="w-full appearance-none rounded-2xl border border-zinc-200 bg-white px-4 py-3 pr-11 text-sm text-black outline-none transition focus:border-zinc-400 focus:ring-4 focus:ring-zinc-200/70 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50 dark:focus:border-white dark:focus:ring-white/10"
-              >
-                <option value="all">All Locations</option>
-                {uniqueLocations.map((locationKey) => {
-                  const displayName = locationMap.get(locationKey) || locationKey;
-                  return (
-                    <option key={locationKey} value={locationKey}>
-                      {displayName}
-                    </option>
-                  );
-                })}
-              </select>
-              <SelectArrow />
+            <div className="w-full min-w-0">
+              <div className="relative">
+                <select
+                  value={locationFilter}
+                  onChange={(e) => setLocationFilter(e.target.value)}
+                  className="w-full appearance-none rounded-2xl border border-zinc-200 bg-white px-4 py-3 pr-11 text-sm text-black outline-none transition focus:border-zinc-400 focus:ring-4 focus:ring-zinc-200/70 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50 dark:focus:border-white dark:focus:ring-white/10"
+                >
+                  <option value="all">All Locations</option>
+                  {uniqueLocations.map((locationKey) => {
+                    const displayName = locationMap.get(locationKey) || locationKey;
+                    return (
+                      <option key={locationKey} value={locationKey}>
+                        {displayName}
+                      </option>
+                    );
+                  })}
+                </select>
+                <SelectArrow />
+              </div>
             </div>
-          </div>
-          <div className="w-full flex-1 sm:min-w-[200px]">
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-400">
-              Deadline
-            </label>
-            <div className="relative">
-              <select
-                value={deadlineFilter}
-                onChange={(e) => setDeadlineFilter(e.target.value)}
-                className="w-full appearance-none rounded-2xl border border-zinc-200 bg-white px-4 py-3 pr-11 text-sm text-black outline-none transition focus:border-zinc-400 focus:ring-4 focus:ring-zinc-200/70 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50 dark:focus:border-white dark:focus:ring-white/10"
-              >
-                <option value="all">All Deadlines</option>
-                <option value="upcoming">Upcoming</option>
-                <option value="this_week">This Week</option>
-                <option value="past">Past</option>
-              </select>
-              <SelectArrow />
+            <div className="w-full min-w-0">
+              <div className="relative">
+                <select
+                  value={deadlineFilter}
+                  onChange={(e) => setDeadlineFilter(e.target.value)}
+                  className="w-full appearance-none rounded-2xl border border-zinc-200 bg-white px-4 py-3 pr-11 text-sm text-black outline-none transition focus:border-zinc-400 focus:ring-4 focus:ring-zinc-200/70 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50 dark:focus:border-white dark:focus:ring-white/10"
+                >
+                  <option value="all">All Deadlines</option>
+                  <option value="upcoming">Upcoming</option>
+                  <option value="this_week">This Week</option>
+                  <option value="past">Past</option>
+                </select>
+                <SelectArrow />
+              </div>
             </div>
-          </div>
-          <div className="w-full sm:w-auto">
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-400">
-              View
-            </label>
-            <div className="flex rounded-full bg-zinc-100 p-1 dark:bg-zinc-800/80">
-              <button
-                type="button"
-                onClick={() => setTrackerDisplayMode("rows")}
-                className={`inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-medium transition ${
-                  trackerDisplayMode === "rows"
-                    ? "bg-white text-black shadow-sm dark:bg-white dark:text-zinc-950"
-                    : "text-zinc-600 hover:text-black dark:text-zinc-300 dark:hover:text-zinc-50"
-                }`}
-              >
-                <MdViewList className="text-lg" />
-                Rows
-              </button>
-              <button
-                type="button"
-                onClick={() => setTrackerDisplayMode("grid")}
-                className={`inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-medium transition ${
-                  trackerDisplayMode === "grid"
-                    ? "bg-white text-black shadow-sm dark:bg-white dark:text-zinc-950"
-                    : "text-zinc-600 hover:text-black dark:text-zinc-300 dark:hover:text-zinc-50"
-                }`}
-              >
-                <MdGridView className="text-lg" />
-                Grid
-              </button>
+            <div className="w-full sm:w-auto">
+              <div className="flex rounded-full bg-zinc-100 p-1 dark:bg-zinc-800/80">
+                <button
+                  type="button"
+                  onClick={() => setTrackerDisplayMode("rows")}
+                  className={`inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-medium transition ${
+                    trackerDisplayMode === "rows"
+                      ? "bg-white text-black shadow-sm dark:bg-white dark:text-zinc-950"
+                      : "text-zinc-600 hover:text-black dark:text-zinc-300 dark:hover:text-zinc-50"
+                  }`}
+                >
+                  <MdViewList className="text-lg" />
+                  Rows
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTrackerDisplayMode("grid")}
+                  className={`inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-medium transition ${
+                    trackerDisplayMode === "grid"
+                      ? "bg-white text-black shadow-sm dark:bg-white dark:text-zinc-950"
+                      : "text-zinc-600 hover:text-black dark:text-zinc-300 dark:hover:text-zinc-50"
+                  }`}
+                >
+                  <MdGridView className="text-lg" />
+                  Grid
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1139,6 +1210,18 @@ export function TrackerWorkspace({
                             <h3 className="mt-2 truncate text-xl font-semibold tracking-tight text-black dark:text-zinc-50">
                               {app.company}
                             </h3>
+                            {app.is_starred ? (
+                              <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-700 dark:bg-amber-950/60 dark:text-amber-300">
+                                <MdStar className="text-sm" />
+                                Starred
+                              </span>
+                            ) : null}
+                            {app.is_archived ? (
+                              <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                                <MdArchive className="text-sm" />
+                                Archived
+                              </span>
+                            ) : null}
                             <p className="mt-2 line-clamp-2 text-sm text-zinc-600 dark:text-zinc-400">
                               {roles[0] || "Role not added yet"}
                             </p>
@@ -1183,6 +1266,8 @@ export function TrackerWorkspace({
                       <div className="space-y-4 border-t border-cyan-100 bg-cyan-50/40 p-5 dark:border-zinc-800 dark:bg-zinc-950/60">
                         {renderInlineApplicationFields(app)}
 
+                        {renderApplicationActions(app)}
+
                         <div className="flex flex-wrap gap-2">
                           {app.website ? (
                             <a
@@ -1195,6 +1280,17 @@ export function TrackerWorkspace({
                               Website
                             </a>
                           ) : null}
+                          {app.career_website ? (
+                            <a
+                              href={app.career_website}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-2 text-xs font-medium text-zinc-700 ring-1 ring-inset ring-zinc-200 transition hover:bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-100 dark:ring-zinc-700 dark:hover:bg-zinc-700"
+                            >
+                              <MdLaunch className="text-sm" />
+                              Job Page
+                            </a>
+                          ) : null}
                           <button
                             type="button"
                             onClick={() => onAddContact(app)}
@@ -1202,14 +1298,6 @@ export function TrackerWorkspace({
                           >
                             <MdPersonAdd className="text-sm" />
                             Add Contact
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => onDelete(app.id)}
-                            className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-2 text-xs font-medium text-red-600 ring-1 ring-inset ring-red-100 transition hover:bg-red-50 dark:bg-zinc-800 dark:text-red-300 dark:ring-red-900/60"
-                          >
-                            <MdDelete className="text-sm" />
-                            Delete
                           </button>
                         </div>
 
@@ -1295,6 +1383,16 @@ export function TrackerWorkspace({
                             <h3 className="truncate text-base font-semibold text-black dark:text-zinc-50">
                               {app.company}
                             </h3>
+                            {app.is_starred ? (
+                              <span className="inline-flex items-center rounded-full bg-amber-100 p-1 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300">
+                                <MdStar className="text-sm" />
+                              </span>
+                            ) : null}
+                            {app.is_archived ? (
+                              <span className="inline-flex items-center rounded-full bg-slate-100 p-1 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                                <MdArchive className="text-sm" />
+                              </span>
+                            ) : null}
                             <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold text-white ${getStatusColor(app.status)}`}>
                               {formatStatus(app.status)}
                             </span>
@@ -1344,7 +1442,7 @@ export function TrackerWorkspace({
                             Website
                           </a>
                         ) : null}
-                        <span className="inline-flex min-w-[7rem] items-center justify-center gap-2 rounded-full bg-zinc-100 px-3 py-2 text-sm font-medium text-zinc-600 transition dark:bg-zinc-700 dark:text-zinc-100">
+                        <span className="inline-flex min-w-[7rem] items-center justify-center gap-2 rounded-full bg-zinc-100 px-3 py-2 text-sm font-medium text-zinc-600 transition-colors duration-200 hover:bg-zinc-200 hover:text-black dark:bg-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-600 dark:hover:text-white">
                           <span className="inline-block w-12 text-center">{isExpanded ? "Close" : "Details"}</span>
                           {isExpanded ? <MdExpandLess className="text-lg" /> : <MdExpandMore className="text-lg" />}
                         </span>
@@ -1353,6 +1451,10 @@ export function TrackerWorkspace({
 
                     {isExpanded ? (
                       <div className="border-t border-cyan-100 bg-cyan-50/40 p-5 dark:border-zinc-800 dark:bg-zinc-950/60">
+                        <div className="mb-5">
+                          {renderApplicationActions(app)}
+                        </div>
+
                         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
                           {renderInlineApplicationFields(app)}
 
@@ -1518,17 +1620,6 @@ export function TrackerWorkspace({
                               )}
                             </div>
                           </div>
-                        </div>
-
-                        <div className="mt-5 flex justify-end">
-                          <button
-                            type="button"
-                            onClick={() => onDelete(app.id)}
-                            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-red-200 bg-white px-4 py-3 text-sm font-medium text-red-600 transition hover:bg-red-50 dark:border-red-900/60 dark:bg-zinc-800 dark:text-red-300 dark:hover:bg-red-950/40"
-                          >
-                            <MdDelete className="text-base" />
-                            Delete Application
-                          </button>
                         </div>
                       </div>
                     ) : null}

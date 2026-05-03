@@ -72,6 +72,9 @@ export async function PATCH(
         ...(body.status !== undefined && { status: body.status }),
         ...(body.deadline !== undefined && { deadline: body.deadline }),
         ...(body.website !== undefined && { website: body.website }),
+        ...(body.career_website !== undefined && { career_website: body.career_website }),
+        ...(body.is_starred !== undefined && { is_starred: body.is_starred }),
+        ...(body.is_archived !== undefined && { is_archived: body.is_archived }),
         ...(body.notes !== undefined && { notes: body.notes }),
         ...(body.attachments !== undefined && { attachments: body.attachments }),
       })

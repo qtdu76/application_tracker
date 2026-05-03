@@ -215,6 +215,19 @@ export function ApplicationFormModal({
 
             <div>
               <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                Careers / Job Page
+              </label>
+              <input
+                type="url"
+                value={formData.career_website || ""}
+                onChange={(e) => setFormData({ ...formData, career_website: e.target.value || null })}
+                placeholder="https://..."
+                className="w-full rounded-md border border-zinc-300 bg-white p-2 text-black dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+              />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
                 Notes
               </label>
               <textarea

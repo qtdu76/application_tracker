@@ -18,6 +18,7 @@ export async function GET() {
       .from('applications')
       .select('*')
       .eq('user_id', user.id)
+      .order('is_starred', { ascending: false })
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -72,6 +73,9 @@ export async function POST(req: Request) {
         status: body.status || 'not_applied',
         deadline: body.deadline || null,
         website: body.website || null,
+        career_website: body.career_website || null,
+        is_starred: body.is_starred ?? false,
+        is_archived: body.is_archived ?? false,
         notes: body.notes || null,
         attachments: body.attachments || [],
       }])

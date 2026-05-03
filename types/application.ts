@@ -28,6 +28,9 @@ export interface Application {
   status: ApplicationStatus;
   deadline: string | null; // ISO date string
   website: string | null;
+  career_website: string | null;
+  is_starred: boolean;
+  is_archived: boolean;
   notes: string | null;
   attachments: Attachment[] | null;
   created_at: string;
@@ -44,6 +47,9 @@ export interface ApplicationInsert {
   status?: ApplicationStatus;
   deadline?: string | null;
   website?: string | null;
+  career_website?: string | null;
+  is_starred?: boolean;
+  is_archived?: boolean;
   notes?: string | null;
   attachments?: Attachment[] | null;
 }
@@ -57,6 +63,9 @@ export interface ApplicationUpdate {
   status?: ApplicationStatus;
   deadline?: string | null;
   website?: string | null;
+  career_website?: string | null;
+  is_starred?: boolean;
+  is_archived?: boolean;
   notes?: string | null;
   attachments?: Attachment[] | null;
 }
