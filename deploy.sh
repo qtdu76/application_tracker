@@ -22,10 +22,10 @@ if [[ -n "${ENV_FILE:-}" ]]; then
     exit 1
   fi
   compose+=(--env-file "$ENV_FILE")
-elif [[ -f "$APP_DIR/.env.local" ]]; then
-  compose+=(--env-file "$APP_DIR/.env.local")
 elif [[ -f "$APP_DIR/.env" ]]; then
   compose+=(--env-file "$APP_DIR/.env")
+elif [[ -f "$APP_DIR/.env.local" ]]; then
+  compose+=(--env-file "$APP_DIR/.env.local")
 else
   echo "WARNING: no .env.local or .env file found in $APP_DIR" >&2
 fi
