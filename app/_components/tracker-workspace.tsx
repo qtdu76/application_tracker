@@ -52,6 +52,21 @@ function getWebsiteDetails(website: string | null): WebsiteDetails | null {
   }
 }
 
+function getOpenableWebsiteUrl(website: string | null): string | null {
+  if (!website) {
+    return null;
+  }
+
+  const trimmedWebsite = website.trim();
+  if (!trimmedWebsite) {
+    return null;
+  }
+
+  return /^[a-z][a-z\d+\-.]*:\/\//i.test(trimmedWebsite)
+    ? trimmedWebsite
+    : `https://${trimmedWebsite}`;
+}
+
 function getFaviconSources(website: string | null): string[] {
   const websiteDetails = getWebsiteDetails(website);
   if (!websiteDetails) {
@@ -110,6 +125,66 @@ function SelectArrow() {
       aria-hidden="true"
       className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xl text-zinc-400 dark:text-zinc-500"
     />
+  );
+}
+
+function EditableUrlField({
+  id,
+  label,
+  value,
+  placeholder,
+  onBlur,
+}: {
+  id: string;
+  label: string;
+  value: string | null;
+  placeholder: string;
+  onBlur: (value: string) => void;
+}) {
+  const [draftValue, setDraftValue] = useState(value || "");
+
+  const openableUrl = getOpenableWebsiteUrl(draftValue);
+
+  return (
+    <div className="sm:col-span-2">
+      <label
+        htmlFor={id}
+        className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-400"
+      >
+        {label}
+      </label>
+      <div className="flex items-center gap-2">
+        <input
+          id={id}
+          type="url"
+          value={draftValue}
+          onChange={(event) => setDraftValue(event.target.value)}
+          onBlur={(event) => onBlur(event.currentTarget.value)}
+          placeholder={placeholder}
+          className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-black outline-none transition placeholder:text-zinc-400 focus:border-zinc-400 focus:ring-4 focus:ring-zinc-200/70 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50 dark:placeholder:text-zinc-500 dark:focus:border-white dark:focus:ring-white/10"
+        />
+        {openableUrl ? (
+          <a
+            href={openableUrl}
+            target="_blank"
+            rel="noreferrer"
+            aria-label={`Open ${label}`}
+            className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-zinc-200 bg-white text-zinc-500 transition hover:border-zinc-300 hover:text-zinc-900 focus:outline-none focus:ring-4 focus:ring-zinc-200/70 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-zinc-600 dark:hover:text-zinc-50 dark:focus:ring-white/10"
+          >
+            <MdLaunch className="text-lg" aria-hidden="true" />
+          </a>
+        ) : (
+          <button
+            type="button"
+            disabled
+            aria-label={`Open ${label}`}
+            className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-zinc-200 bg-zinc-100 text-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-600"
+          >
+            <MdLaunch className="text-lg" aria-hidden="true" />
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -550,31 +625,23 @@ export function TrackerWorkspace({
           />
         </div>
 
-        <div className="sm:col-span-2">
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-400">
-            Website
-          </label>
-          <input
-            type="url"
-            defaultValue={app.website || ""}
-            onBlur={(event) => saveTextFieldOnBlur(app, "website", event.currentTarget.value)}
-            placeholder="https://..."
-            className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-black outline-none transition placeholder:text-zinc-400 focus:border-zinc-400 focus:ring-4 focus:ring-zinc-200/70 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50 dark:placeholder:text-zinc-500 dark:focus:border-white dark:focus:ring-white/10"
-          />
-        </div>
+        <EditableUrlField
+          key={`${app.id}-website-${app.website || ""}`}
+          id={`website-${app.id}`}
+          label="Website"
+          value={app.website}
+          placeholder="https://..."
+          onBlur={(value) => saveTextFieldOnBlur(app, "website", value)}
+        />
 
-        <div className="sm:col-span-2">
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-400">
-            Careers / Job Page
-          </label>
-          <input
-            type="url"
-            defaultValue={app.career_website || ""}
-            onBlur={(event) => saveTextFieldOnBlur(app, "career_website", event.currentTarget.value)}
-            placeholder="https://..."
-            className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-black outline-none transition placeholder:text-zinc-400 focus:border-zinc-400 focus:ring-4 focus:ring-zinc-200/70 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50 dark:placeholder:text-zinc-500 dark:focus:border-white dark:focus:ring-white/10"
-          />
-        </div>
+        <EditableUrlField
+          key={`${app.id}-career-website-${app.career_website || ""}`}
+          id={`career-website-${app.id}`}
+          label="Careers / Job Page"
+          value={app.career_website}
+          placeholder="https://..."
+          onBlur={(value) => saveTextFieldOnBlur(app, "career_website", value)}
+        />
       </div>
 
       <div>
