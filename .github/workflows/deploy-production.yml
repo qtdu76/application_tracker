@@ -18,7 +18,7 @@ jobs:
   verify:
     name: Verify App
     runs-on: ubuntu-latest
-    environment: production
+    environment: prod
     steps:
       - name: Check out repo
         uses: actions/checkout@v4
@@ -40,8 +40,6 @@ jobs:
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY }}
 
   publish:
     name: Build And Push Image
@@ -50,7 +48,7 @@ jobs:
     permissions:
       contents: read
       packages: write
-    environment: production
+    environment: prod
     steps:
       - name: Check out repo
         uses: actions/checkout@v4
@@ -61,6 +59,9 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Extract Docker metadata
         id: meta
@@ -81,8 +82,6 @@ jobs:
           build-args: |
             NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
             NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
-            NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-            NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -90,7 +89,7 @@ jobs:
     name: Deploy To Server
     runs-on: ubuntu-latest
     needs: publish
-    environment: production
+    environment: prod
     steps:
       - name: Configure SSH
         env:

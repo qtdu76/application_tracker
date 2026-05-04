@@ -146,7 +146,7 @@ ENV_FILE=/path/to/.env
 
 ### GitHub Actions configuration
 
-Create a GitHub Actions environment named `production`.
+Create a GitHub Actions environment named `prod`.
 
 Add these environment secrets:
 
