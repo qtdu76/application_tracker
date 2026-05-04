@@ -116,7 +116,21 @@ The compose file expects the app to join an external Docker network named `proxy
 
 ## Deployment
 
-`deploy.sh` pulls the latest code from the configured branch, loads `.env.local` or `.env`, rebuilds the Docker image, and restarts the container.
+Production deploys use GitHub Actions to lint the app, build a Docker image, push it to GHCR, and SSH into the server to run `docker compose pull && docker compose up -d`.
+
+The server only needs three files in its deployment directory:
+
+- `docker-compose.prod.yml`
+- `deploy.sh`
+- `.env` copied from `.env.production.example`
+
+Set `APP_IMAGE` in the server env file to the GHCR image you want to deploy, for example:
+
+```env
+APP_IMAGE=ghcr.io/OWNER/application-tracker:main
+```
+
+`deploy.sh` now pulls the latest published image, loads `.env.local` or `.env`, and restarts the container without rebuilding on the server.
 
 ```bash
 ./deploy.sh
@@ -125,9 +139,37 @@ The compose file expects the app to join an external Docker network named `proxy
 Set these variables if needed:
 
 ```bash
-APP_DIR=/path/to/application_tracker
-DEPLOY_BRANCH=main
+APP_DIR=/path/to/deployment-directory
+COMPOSE_FILE=/path/to/docker-compose.prod.yml
 ENV_FILE=/path/to/.env
+```
+
+### GitHub Actions configuration
+
+Create a GitHub Actions environment named `production`.
+
+Add these environment secrets:
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY`
+- `DEPLOY_HOST`
+- `DEPLOY_SSH_PRIVATE_KEY`
+- `DEPLOY_SSH_KNOWN_HOSTS`
+
+Add these environment variables:
+
+- `DEPLOY_USER`
+- `DEPLOY_PORT`
+- `DEPLOY_APP_DIR`
+
+Keep `SUPABASE_SECRET_KEY` and `SUPABASE_SERVICE_ROLE_KEY` only in the server `.env` file when the app needs them at runtime.
+
+If the GHCR package is private, log the server into `ghcr.io` once as the `deploy` user with a token that has `read:packages`:
+
+```bash
+echo "$GHCR_TOKEN" | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
 ```
 
 ## Project Layout

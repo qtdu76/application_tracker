@@ -4,14 +4,7 @@ networks:
 
 services:
   nextjs:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
-        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:-}
-        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
-        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: ${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY:-}
+    image: ${APP_IMAGE:?Set APP_IMAGE in the deployment env file}
     container_name: application_tracker
     environment:
       NODE_ENV: production
@@ -34,3 +27,4 @@ services:
       start_period: 40s
     networks:
       - proxy_net
+
