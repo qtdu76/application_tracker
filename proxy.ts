@@ -8,11 +8,14 @@ export async function proxy(request: NextRequest) {
     },
   })
 
-  // Support both standard anon key and publishable key naming
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 
-                  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY
+  // Match the same public key fallback order used in the rest of the app.
+  const publishableKey =
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+    process.env.NEXT_PUBLIC_PUBLISHABLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !anonKey) {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !publishableKey) {
     return NextResponse.json(
       { error: 'Missing Supabase configuration' },
       { status: 500 }
@@ -21,7 +24,7 @@ export async function proxy(request: NextRequest) {
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
-    anonKey,
+    publishableKey,
     {
       cookies: {
         getAll() {
